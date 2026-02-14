@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cabin+Sketch:wght@400;700&family=Cabin+Condensed:wght@400;700&display=swap");
+
+@layer base {
+  :root {
+    --ip-black: #030400;
+    --ip-orange: #ff8f05;
+    --ip-white: #f7f7fc;
+    --ip-dark: #333333;
+    --ip-brown: #31210d;
+  }
+
+  html,
+  body {
+    @apply h-full overflow-hidden bg-ip-black antialiased;
+    color: var(--ip-white);
+    font-family: "Cabin", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .voice-btn {
+      border: 2px solid ButtonText;
+    }
+  }
+}
+
+@layer components {
+  .camera-feed {
+    @apply fixed inset-0 h-full w-full object-cover;
+    z-index: 0;
+  }
+
+  .three-overlay {
+    @apply fixed inset-0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .ui-overlay {
+    @apply fixed inset-0 flex flex-col items-center justify-end;
+    z-index: 20;
+    pointer-events: none;
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+  }
+
+  .ui-overlay > * {
+    pointer-events: auto;
+  }
+
+  .voice-btn {
+    @apply relative flex h-20 w-20 items-center justify-center rounded-full
+           shadow-ip backdrop-blur-sm
+           transition-transform duration-200 ease-in-out
+           focus:outline-none focus:ring-4 focus:ring-ip-orange/50;
+    background: var(--ip-orange);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  .voice-btn[aria-pressed="true"] {
+    @apply scale-110;
+    background: #ff5a3c;
+    box-shadow: 0 0 30px rgba(255, 90, 60, 0.4);
+  }
+
+  .progress-pill {
+    @apply inline-flex items-center gap-2 text-sm font-medium backdrop-blur-sm;
+    background: rgba(3, 4, 0, 0.8);
+    border-radius: 10px;
+    padding: 8px 20px;
+  }
+
+  .ip-gradient {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(49, 33, 13, 1));
+  }
+
+  .ip-overlay {
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4));
+  }
+
+  .transcript-bubble {
+    @apply text-base;
+    background: rgba(3, 4, 0, 0.75);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 8px 20px;
+    max-width: 90vw;
+    text-align: center;
+  }
+}
