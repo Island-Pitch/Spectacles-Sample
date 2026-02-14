@@ -75,6 +75,8 @@ export class MeshyModelGen extends BaseScriptComponent {
   > = new Map();
 
   private activeRequestId: string = null;
+  private requestPositions: Map<string, vec3> = new Map();
+  private requestScales: Map<string, number> = new Map();
 
   onAwake() {
     if (!this.apiKey || this.apiKey.trim() === "") {
@@ -103,6 +105,13 @@ export class MeshyModelGen extends BaseScriptComponent {
     const currentRequestId =
       requestId || `meshy_${Date.now()}_${Math.random()}`;
     this.activeRequestId = currentRequestId;
+
+    // Store position and scale for this request
+    const effectivePosition = overridePosition || this.getTargetPosition();
+    if (effectivePosition) {
+      this.requestPositions.set(currentRequestId, effectivePosition);
+    }
+    this.requestScales.set(currentRequestId, this.defaultScale);
 
     try {
       if (!prompt || prompt.trim() === "") {
@@ -163,6 +172,9 @@ export class MeshyModelGen extends BaseScriptComponent {
     } finally {
       this.isGenerating = false;
       this.activeRequestId = null;
+      // Clean up request-specific data
+      this.requestPositions.delete(currentRequestId);
+      this.requestScales.delete(currentRequestId);
     }
   }
 
@@ -256,29 +268,42 @@ export class MeshyModelGen extends BaseScriptComponent {
     texture: Texture,
     requestId?: string
   ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      Base64.encodeTextureAsync(
-        texture,
-        (base64String) => {
-          if (this.enableDebugLogging) {
-            print("MeshyModelGen: Texture encoded, submitting to image-to-3D");
-          }
-          this.generateModelFromBase64Image(base64String, "image/png", requestId)
-            .then(resolve)
-            .catch(reject);
-        },
-        () => {
-          const error = "Failed to encode texture to base64";
-          this.notifyFailureCallbacks(
-            requestId || this.activeRequestId,
-            error
-          );
-          reject(new Error(error));
-        },
-        CompressionQuality.HighQuality,
-        EncodingType.Png
-      );
-    });
+    this.isGenerating = true;
+    const currentRequestId =
+      requestId || `meshy_tex_${Date.now()}_${Math.random()}`;
+    this.activeRequestId = currentRequestId;
+
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        Base64.encodeTextureAsync(
+          texture,
+          (base64String) => {
+            if (this.enableDebugLogging) {
+              print("MeshyModelGen: Texture encoded, submitting to image-to-3D");
+            }
+            this.generateModelFromBase64Image(base64String, "image/png", currentRequestId)
+              .then(resolve)
+              .catch(reject);
+          },
+          () => {
+            const error = "Failed to encode texture to base64";
+            this.notifyFailureCallbacks(currentRequestId, error);
+            reject(new Error(error));
+          },
+          CompressionQuality.HighQuality,
+          EncodingType.Png
+        );
+      });
+    } catch (error) {
+      if (this.enableDebugLogging) {
+        print(`MeshyModelGen: Texture-to-3D error: ${error}`);
+      }
+      this.notifyFailureCallbacks(currentRequestId, error.toString());
+      throw error;
+    } finally {
+      this.isGenerating = false;
+      this.activeRequestId = null;
+    }
   }
 
   /**

@@ -145,9 +145,14 @@ jobs:
         run: |
           PARAM_OVERRIDES="MeshyApiKey=${{ secrets.MESHY_API_KEY }} GeminiApiKey=${{ secrets.GEMINI_API_KEY }} OpenAIApiKey=${{ secrets.OPENAI_API_KEY }}"
 
-          # Custom domain only for prod
+          # Custom domain only for prod (only include if secrets are set)
           if [[ "$DEPLOY_ENV" == "prod" ]]; then
-            PARAM_OVERRIDES="$PARAM_OVERRIDES DomainName=${{ secrets.DOMAIN_NAME || '' }} CertificateArn=${{ secrets.CERTIFICATE_ARN || '' }}"
+            if [[ -n "${{ secrets.DOMAIN_NAME }}" ]]; then
+              PARAM_OVERRIDES="$PARAM_OVERRIDES DomainName=${{ secrets.DOMAIN_NAME }}"
+            fi
+            if [[ -n "${{ secrets.CERTIFICATE_ARN }}" ]]; then
+              PARAM_OVERRIDES="$PARAM_OVERRIDES CertificateArn=${{ secrets.CERTIFICATE_ARN }}"
+            fi
           fi
 
           sam deploy \
