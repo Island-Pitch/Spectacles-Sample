@@ -5,8 +5,8 @@ import {
   SceneOrchestrator,
   type SceneObject,
   type SceneCommand,
-} from "@/services/scene-orchestrator";
-import { MeshyApi } from "@/services/meshy-api";
+} from "@/lib/scene-orchestrator";
+import { MeshyApi } from "@/lib/meshy-api";
 import { SpeechSynthesizer } from "@/voice/speech-synthesizer";
 
 interface UseSceneOrchestratorReturn {

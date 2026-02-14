@@ -1,11 +1,8 @@
-import withPWAInit from "next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-  skipWaiting: true,
-});
+/**
+ * next.config.mjs — FW-01: Next.js 15 App Router
+ * Custom sw.js is in /public (SW-01), no next-pwa needed.
+ * PERF-01: Static export for S3+CloudFront deployment.
+ */
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -14,4 +11,4 @@ const nextConfig = {
   trailingSlash: true,
 };
 
-export default withPWA(nextConfig);
+export default nextConfig;

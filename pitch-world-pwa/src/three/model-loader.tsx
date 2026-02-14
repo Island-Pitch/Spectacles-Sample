@@ -3,7 +3,7 @@
 import { useGLTF } from "@react-three/drei";
 import { useRef, useEffect } from "react";
 import type { Group } from "three";
-import type { SceneObject } from "@/services/scene-orchestrator";
+import type { SceneObject } from "@/lib/scene-orchestrator";
 
 interface ModelInstanceProps {
   sceneObject: SceneObject;

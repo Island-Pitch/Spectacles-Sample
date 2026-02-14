@@ -1,14 +1,27 @@
 "use client";
 
+/**
+ * page.tsx — Main experience page
+ * JS-04 / PERF-04: Dynamic import for Three.js (heavy 3D libs)
+ * CSS-05: Page-scoped styles via experience.css
+ */
+
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { CameraFeed } from "@/components/CameraFeed";
 import { VoiceButton } from "@/components/VoiceButton";
 import { TranscriptDisplay } from "@/components/TranscriptDisplay";
 import { ProgressOverlay } from "@/components/ProgressOverlay";
-import { SceneManager } from "@/three/scene-manager";
 import { useVoiceCommand } from "@/hooks/useVoiceCommand";
 import { useSceneOrchestrator } from "@/hooks/useSceneOrchestrator";
 import { useAriaLive } from "@/a11y/aria-live-region";
+import "@/styles/experience.css";
+
+/** JS-04: Dynamic import — Three.js only loads when experience starts */
+const SceneManager = dynamic(
+  () => import("@/three/scene-manager").then((mod) => mod.SceneManager),
+  { ssr: false }
+);
 
 export default function ExperiencePage() {
   const [started, setStarted] = useState(false);
@@ -63,7 +76,7 @@ export default function ExperiencePage() {
       {/* Layer 0: Camera */}
       <CameraFeed />
 
-      {/* Layer 1: 3D scene */}
+      {/* Layer 1: 3D scene (dynamically loaded) */}
       <SceneManager objects={scene.sceneObjects} />
 
       {/* Layer 2: UI overlay */}

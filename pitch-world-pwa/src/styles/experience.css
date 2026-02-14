@@ -1,0 +1,144 @@
+/* ============================================================
+   experience.css — CSS-05: Page-scoped styles for the
+   full-screen AR camera experience (main page)
+   ============================================================ */
+
+/* Full-screen camera video */
+.camera-feed {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* 3D canvas overlay */
+.three-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* UI overlay on top of everything */
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 20;
+  pointer-events: none;
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+.ui-overlay > * {
+  pointer-events: auto;
+}
+
+/* Voice button — Island Pitch orange — A11Y-13: 80x80 > 44x44 min */
+.voice-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ip-accent);
+  box-shadow: var(--ip-shadow);
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s ease-in-out, background 0.2s ease, box-shadow 0.2s ease;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* CSS-17: Hover, focus, active states */
+.voice-btn:hover {
+  background: var(--ip-accent-hover);
+  transform: scale(1.05);
+}
+
+.voice-btn:active {
+  background: var(--ip-accent-active);
+  transform: scale(0.95);
+}
+
+.voice-btn[aria-pressed="true"] {
+  transform: scale(1.1);
+  background: var(--ip-error);
+  box-shadow: 0 0 30px rgba(255, 90, 60, 0.4);
+}
+
+.voice-btn[aria-pressed="true"]:hover {
+  background: #e8503a;
+}
+
+/* Progress pill */
+.progress-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+  background: rgba(3, 4, 0, 0.8);
+  border-radius: var(--ip-radius);
+  padding: 8px 20px;
+}
+
+/* IP branded gradient background */
+.ip-gradient {
+  background: var(--ip-gradient);
+}
+
+.ip-overlay {
+  background: var(--ip-overlay);
+}
+
+/* Transcript display */
+.transcript-bubble {
+  font-size: 1rem;
+  background: rgba(3, 4, 0, 0.75);
+  backdrop-filter: blur(12px);
+  border-radius: var(--ip-radius);
+  padding: 8px 20px;
+  max-width: 90vw;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Ripple animation for voice button */
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.voice-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  animation: ripple 1.5s ease-out infinite;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

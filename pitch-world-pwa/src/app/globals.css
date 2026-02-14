@@ -1,27 +1,73 @@
+/* ============================================================
+   globals.css — CSS-04: Reset, skip link, focus styles,
+   reduced-motion, base typography, design tokens
+   Island Pitch PWA Standards compliant
+   ============================================================ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* IMG-09: Preconnect handled in layout head; load fonts here */
 @import url("https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cabin+Sketch:wght@400;700&family=Cabin+Condensed:wght@400;700&display=swap");
 
+/* CSS-05 / CSS-07: Page-scoped and PWA stylesheets */
+@import "../styles/pwa.css";
+@import "../styles/experience.css";
+
+/* ============================================================
+   CSS-01 / CSS-02: Design tokens as CSS custom properties
+   CSS-03: Never use raw hex — always reference tokens
+   ============================================================ */
 @layer base {
   :root {
+    /* Brand palette */
     --ip-black: #030400;
     --ip-orange: #ff8f05;
     --ip-white: #f7f7fc;
     --ip-dark: #333333;
     --ip-brown: #31210d;
+
+    /* Semantic aliases */
+    --ip-bg: var(--ip-black);
+    --ip-fg: var(--ip-white);
+    --ip-accent: var(--ip-orange);
+    --ip-accent-hover: #e6800a;
+    --ip-accent-active: #cc7200;
+    --ip-error: #ff5a3c;
+    --ip-success: #4caf50;
+    --ip-info: #2196f3;
+
+    /* Gradient */
+    --ip-gradient: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(49, 33, 13, 1));
+    --ip-overlay: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4));
+
+    /* Spacing */
+    --ip-radius: 10px;
+    --ip-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  /* CSS-08: Box-sizing border-box globally */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
   }
 
   html,
   body {
-    @apply h-full overflow-hidden bg-ip-black antialiased;
-    color: var(--ip-white);
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--ip-bg);
+    color: var(--ip-fg);
     font-family: "Cabin", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
 
+  /* A11Y-11 / CSS-10: Disable animations for reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -29,76 +75,91 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 
+  /* High contrast mode support */
   @media (forced-colors: active) {
     .voice-btn {
       border: 2px solid ButtonText;
     }
   }
-}
 
-@layer components {
-  .camera-feed {
-    @apply fixed inset-0 h-full w-full object-cover;
-    z-index: 0;
+  /* CSS-11 / A11Y-03: Focus-visible outlines — 3px solid brand color, 2px offset */
+  :focus-visible {
+    outline: 3px solid var(--ip-accent);
+    outline-offset: 2px;
   }
 
-  .three-overlay {
-    @apply fixed inset-0;
-    z-index: 10;
+  /* Remove default focus for non-keyboard users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* CSS-12 / A11Y-10: Screen-reader-only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* HTML-04 / A11Y-01: Skip-to-content link */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    z-index: 9999;
+    padding: 12px 24px;
+    background: var(--ip-accent);
+    color: var(--ip-fg);
+    font-weight: 600;
+    border-radius: var(--ip-radius);
+    text-decoration: none;
+  }
+
+  .skip-link:focus {
+    top: 8px;
+    left: 8px;
+  }
+
+  /* CSS-17: Button base states — hover, focus, active */
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* A11Y-13: Minimum touch target 44x44px */
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* CSS-15: Loading overlays — opacity transitions, never display:none flash */
+  .loading-overlay {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .loading-overlay--hidden {
+    opacity: 0;
     pointer-events: none;
-  }
-
-  .ui-overlay {
-    @apply fixed inset-0 flex flex-col items-center justify-end;
-    z-index: 20;
-    pointer-events: none;
-    padding-bottom: env(safe-area-inset-bottom, 24px);
-  }
-
-  .ui-overlay > * {
-    pointer-events: auto;
-  }
-
-  .voice-btn {
-    @apply relative flex h-20 w-20 items-center justify-center rounded-full
-           shadow-ip backdrop-blur-sm
-           transition-transform duration-200 ease-in-out
-           focus:outline-none focus:ring-4 focus:ring-ip-orange/50;
-    background: var(--ip-orange);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-  }
-
-  .voice-btn[aria-pressed="true"] {
-    @apply scale-110;
-    background: #ff5a3c;
-    box-shadow: 0 0 30px rgba(255, 90, 60, 0.4);
-  }
-
-  .progress-pill {
-    @apply inline-flex items-center gap-2 text-sm font-medium backdrop-blur-sm;
-    background: rgba(3, 4, 0, 0.8);
-    border-radius: 10px;
-    padding: 8px 20px;
-  }
-
-  .ip-gradient {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(49, 33, 13, 1));
-  }
-
-  .ip-overlay {
-    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4));
-  }
-
-  .transcript-bubble {
-    @apply text-base;
-    background: rgba(3, 4, 0, 0.75);
-    backdrop-filter: blur(12px);
-    border-radius: 10px;
-    padding: 8px 20px;
-    max-width: 90vw;
-    text-align: center;
   }
 }

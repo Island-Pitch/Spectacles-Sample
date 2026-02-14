@@ -1,6 +1,6 @@
 "use client";
 
-import type { SceneObject } from "@/services/scene-orchestrator";
+import type { SceneObject } from "@/lib/scene-orchestrator";
 
 interface ProgressOverlayProps {
   objects: SceneObject[];

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#030400">
+  <title>Offline — Pitch World</title>
+  <!-- SW-10: Styled offline page with no external dependencies -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(to bottom, #000, #31210d);
+      color: #f7f7fc;
+      font-family: "Cabin", system-ui, sans-serif;
+      text-align: center;
+      padding: 24px;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #ff8f05;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 1rem;
+      opacity: 0.7;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+    button {
+      margin-top: 24px;
+      padding: 12px 32px;
+      background: #ff8f05;
+      color: #f7f7fc;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 44px;
+      min-width: 44px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+    button:focus-visible {
+      outline: 3px solid #ff8f05;
+      outline-offset: 2px;
+    }
+    .tagline {
+      margin-top: 48px;
+      font-size: 0.75rem;
+      opacity: 0.3;
+    }
+  </style>
+</head>
+<body>
+  <h1>You're Offline</h1>
+  <p>Pitch World needs an internet connection to generate 3D models and process voice commands. Please check your connection and try again.</p>
+  <button onclick="window.location.reload()" aria-label="Retry loading the page">Try Again</button>
+  <p class="tagline">Do Cool Things the Right Way!</p>
+</body>
+</html>

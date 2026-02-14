@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { MeshyApi, type MeshyTaskResponse } from "@/services/meshy-api";
+import { MeshyApi, type MeshyTaskResponse } from "@/lib/meshy-api";
 
 export type GenerationStage = "idle" | "preview" | "refine" | "complete" | "error";
 

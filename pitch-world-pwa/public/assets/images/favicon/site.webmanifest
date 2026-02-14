@@ -1,0 +1,56 @@
+{
+  "name": "Pitch World — Island Pitch",
+  "short_name": "Pitch World",
+  "description": "Describe it. See it. Accessible AR experience by Island Pitch.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030400",
+  "theme_color": "#ff8f05",
+  "icons": [
+    {
+      "src": "/assets/images/favicon/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/favicon/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/images/favicon/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/favicon/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Experience",
+      "short_name": "Start",
+      "url": "/?mode=experience",
+      "description": "Jump straight into the AR experience",
+      "icons": [
+        {
+          "src": "/assets/images/favicon/android-chrome-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "categories": ["productivity", "entertainment", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false
+}

@@ -153,7 +153,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: dist/meshy.handler
-      CodeUri: api/
+      CodeUri: src/lambda/
       Description: Proxies requests to Meshy.ai with server-side API key
       Environment:
         Variables:
@@ -170,7 +170,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: dist/gemini.handler
-      CodeUri: api/
+      CodeUri: src/lambda/
       Description: Proxies requests to Google Gemini with server-side API key
       Environment:
         Variables:
@@ -187,7 +187,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: dist/openai.handler
-      CodeUri: api/
+      CodeUri: src/lambda/
       Description: Proxies requests to OpenAI with server-side API key
       Environment:
         Variables:

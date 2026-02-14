@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
 import { Suspense } from "react";
 import { ModelInstance } from "./model-loader";
-import type { SceneObject } from "@/services/scene-orchestrator";
+import type { SceneObject } from "@/lib/scene-orchestrator";
 
 interface SceneManagerProps {
   objects: SceneObject[];
