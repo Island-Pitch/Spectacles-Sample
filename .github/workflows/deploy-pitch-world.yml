@@ -1,55 +1,101 @@
 # ============================================================
-# Pitch World PWA — Deploy to AWS
+# Pitch World PWA — Deploy to AWS (Dev + Prod)
 # ============================================================
-# Triggers on push to main (after PR merge).
-# Builds Next.js static export + Lambda functions, deploys via
-# SAM, syncs static files to S3, and invalidates CloudFront.
 #
-# Required GitHub Secrets:
-#   AWS_ACCESS_KEY_ID        — IAM user with CloudFormation/S3/CloudFront/Lambda/API GW permissions
-#   AWS_SECRET_ACCESS_KEY    — Corresponding secret key
+# Dev  — Deploys on PR open / push to PR branch targeting main.
+#         Stack: pitch-world-dev  →  separate CloudFront URL
+#         Posts preview URL as PR comment.
+#
+# Prod — Deploys on merge to main.
+#         Stack: pitch-world-prod →  production CloudFront URL
+#
+# Required GitHub Secrets (set per-environment or repo-wide):
+#   AWS_ACCESS_KEY_ID        — IAM credentials
+#   AWS_SECRET_ACCESS_KEY
 #   MESHY_API_KEY            — Meshy.ai API key
 #   GEMINI_API_KEY           — Google Gemini API key
 #   OPENAI_API_KEY           — OpenAI API key
 #
-# Optional GitHub Secrets (for custom domain):
-#   DOMAIN_NAME              — e.g. pitchworld.islandpitch.world
-#   CERTIFICATE_ARN          — ACM certificate ARN (us-east-1 for CloudFront)
+# Optional GitHub Secrets:
+#   DOMAIN_NAME              — Custom domain (prod only)
+#   CERTIFICATE_ARN          — ACM cert ARN (us-east-1)
 # ============================================================
 
 name: Deploy Pitch World
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - "pitch-world-pwa/**"
+      - ".github/workflows/deploy-pitch-world.yml"
   push:
     branches: [main]
     paths:
       - "pitch-world-pwa/**"
       - ".github/workflows/deploy-pitch-world.yml"
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
 
 permissions:
   id-token: write
   contents: read
+  pull-requests: write   # to comment preview URL on PRs
 
 env:
   AWS_REGION: us-west-2
-  SAM_STACK_NAME: pitch-world
-  PWA_DIR: pitch-world-pwa
 
 jobs:
-  deploy:
-    name: Build & Deploy
+  # ── Determine Environment ──────────────────────────────────
+  resolve-env:
+    name: Resolve environment
     runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      stack_name: ${{ steps.env.outputs.stack_name }}
+    steps:
+      - name: Set environment from trigger
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "environment=dev" >> "$GITHUB_OUTPUT"
+            echo "stack_name=pitch-world-dev" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENV="${{ inputs.environment }}"
+            echo "environment=$ENV" >> "$GITHUB_OUTPUT"
+            echo "stack_name=pitch-world-${ENV}" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
+            echo "stack_name=pitch-world-prod" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Build & Deploy ─────────────────────────────────────────
+  deploy:
+    name: Build & Deploy (${{ needs.resolve-env.outputs.environment }})
+    needs: resolve-env
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve-env.outputs.environment }}
     defaults:
       run:
         working-directory: pitch-world-pwa
+    outputs:
+      cf_url: ${{ steps.stack.outputs.cf_url }}
 
     steps:
-      # ── Checkout ──────────────────────────────────────────
+      # ── Checkout ────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── Node.js ───────────────────────────────────────────
+      # ── Node.js ─────────────────────────────────────────────
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -57,7 +103,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: pitch-world-pwa/package-lock.json
 
-      # ── AWS Credentials ──────────────────────────────────
+      # ── AWS Credentials ────────────────────────────────────
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -65,20 +111,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # ── SAM CLI ──────────────────────────────────────────
+      # ── SAM CLI ────────────────────────────────────────────
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v2
         with:
           use-installer: true
 
-      # ── Install Dependencies ─────────────────────────────
+      # ── Install Dependencies ───────────────────────────────
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Install Lambda dependencies
         run: cd src/lambda && npm ci
 
-      # ── Build ────────────────────────────────────────────
+      # ── Build ──────────────────────────────────────────────
       - name: Build Next.js static export
         run: npm run build
 
@@ -88,46 +134,54 @@ jobs:
       - name: SAM build
         run: sam build
 
-      # ── Deploy SAM Stack ─────────────────────────────────
+      # ── Deploy SAM Stack ───────────────────────────────────
       - name: SAM deploy
+        env:
+          STACK_NAME: ${{ needs.resolve-env.outputs.stack_name }}
+          DEPLOY_ENV: ${{ needs.resolve-env.outputs.environment }}
         run: |
+          PARAM_OVERRIDES="MeshyApiKey=${{ secrets.MESHY_API_KEY }} GeminiApiKey=${{ secrets.GEMINI_API_KEY }} OpenAIApiKey=${{ secrets.OPENAI_API_KEY }}"
+
+          # Custom domain only for prod
+          if [[ "$DEPLOY_ENV" == "prod" ]]; then
+            PARAM_OVERRIDES="$PARAM_OVERRIDES DomainName=${{ secrets.DOMAIN_NAME || '' }} CertificateArn=${{ secrets.CERTIFICATE_ARN || '' }}"
+          fi
+
           sam deploy \
-            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --stack-name "$STACK_NAME" \
             --region ${{ env.AWS_REGION }} \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_IAM \
             --resolve-s3 \
-            --parameter-overrides \
-              MeshyApiKey=${{ secrets.MESHY_API_KEY }} \
-              GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
-              OpenAIApiKey=${{ secrets.OPENAI_API_KEY }} \
-              DomainName=${{ secrets.DOMAIN_NAME || '' }} \
-              CertificateArn=${{ secrets.CERTIFICATE_ARN || '' }}
+            --parameter-overrides $PARAM_OVERRIDES
 
-      # ── Get Stack Outputs ────────────────────────────────
+      # ── Get Stack Outputs ──────────────────────────────────
       - name: Get stack outputs
         id: stack
+        env:
+          STACK_NAME: ${{ needs.resolve-env.outputs.stack_name }}
         run: |
           BUCKET=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" \
             --output text)
           DIST_ID=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
             --output text)
           CF_URL=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='CloudFrontURL'].OutputValue" \
             --output text)
           echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
           echo "dist_id=$DIST_ID" >> "$GITHUB_OUTPUT"
           echo "cf_url=$CF_URL" >> "$GITHUB_OUTPUT"
 
-      # ── Sync Static Files to S3 ─────────────────────────
+      # ── Sync Static Files to S3 ───────────────────────────
       - name: Sync static files to S3
         run: |
+          # Fingerprinted assets — long cache
           aws s3 sync out/ s3://${{ steps.stack.outputs.bucket }}/ \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
@@ -135,25 +189,74 @@ jobs:
             --exclude "sw.js" \
             --exclude "assets/images/favicon/site.webmanifest"
 
-          # HTML, SW, and manifest get short cache (for updates)
+          # HTML, SW, manifest — must-revalidate
           aws s3 sync out/ s3://${{ steps.stack.outputs.bucket }}/ \
             --cache-control "public, max-age=0, must-revalidate" \
             --include "*.html" \
             --include "sw.js" \
             --include "assets/images/favicon/site.webmanifest" \
-            --exclude "*" \
+            --exclude "*"
 
-      # ── Invalidate CloudFront ────────────────────────────
+      # ── Invalidate CloudFront ──────────────────────────────
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ steps.stack.outputs.dist_id }} \
             --paths "/*"
 
-      # ── Print Live URL ───────────────────────────────────
+      # ── Print Live URL ─────────────────────────────────────
       - name: Print live URL
+        env:
+          DEPLOY_ENV: ${{ needs.resolve-env.outputs.environment }}
         run: |
           echo "============================================"
-          echo "  Pitch World is live!"
+          echo "  Pitch World ($DEPLOY_ENV) is live!"
           echo "  ${{ steps.stack.outputs.cf_url }}"
           echo "============================================"
+
+  # ── Comment Preview URL on PR ──────────────────────────────
+  preview-comment:
+    name: Post preview URL
+    needs: [resolve-env, deploy]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ needs.deploy.outputs.cf_url }}';
+            const body = [
+              '### Pitch World — Dev Preview',
+              '',
+              `**Live URL:** ${url}`,
+              '',
+              '_Deployed from commit ${{ github.sha }}_',
+              '',
+              '> Do Cool Things the Right Way!',
+            ].join('\n');
+
+            // Update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = '### Pitch World — Dev Preview';
+            const existing = comments.find(c => c.body.startsWith(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
