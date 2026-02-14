@@ -83,61 +83,66 @@ export class MeshyInteractableFactory extends BaseScriptComponent {
 
       this.availableToRequest = false;
 
-      // Create the interactable prefab
-      let outputObj = this.snap3DInteractablePrefab.instantiate(
-        this.sceneObject
-      );
-      outputObj.name = "MeshyInteractable - " + prompt;
+      try {
+        // Create the interactable prefab
+        let outputObj = this.snap3DInteractablePrefab.instantiate(
+          this.sceneObject
+        );
+        outputObj.name = "MeshyInteractable - " + prompt;
 
-      let interactable = outputObj.getComponent(
-        Snap3DInteractable.getTypeName()
-      );
-      interactable.setPrompt(prompt);
+        let interactable = outputObj.getComponent(
+          Snap3DInteractable.getTypeName()
+        );
+        interactable.setPrompt(prompt);
 
-      // Position it
-      if (overridePosition) {
-        outputObj.getTransform().setWorldPosition(overridePosition);
-      } else {
-        let newPos = this.wcfmp.getForwardPosition(80);
-        outputObj.getTransform().setWorldPosition(newPos);
-      }
+        // Position it
+        if (overridePosition) {
+          outputObj.getTransform().setWorldPosition(overridePosition);
+        } else {
+          let newPos = this.wcfmp.getForwardPosition(80);
+          outputObj.getTransform().setWorldPosition(newPos);
+        }
 
-      // Set up callbacks for this specific request
-      const requestId = `meshy_text_${Date.now()}`;
+        // Set up callbacks for this specific request
+        const requestId = `meshy_text_${Date.now()}`;
 
-      this.meshyModelGen.setModelCallback(
-        requestId,
-        (model: GltfAsset, isFinal: boolean) => {
-          interactable.setModel(model, isFinal);
-          if (isFinal) {
-            this.meshyModelGen.removeCallbacks(requestId);
-            this.availableToRequest = true;
-            resolve("Successfully created mesh with prompt: " + prompt);
+        this.meshyModelGen.setModelCallback(
+          requestId,
+          (model: GltfAsset, isFinal: boolean) => {
+            interactable.setModel(model, isFinal);
+            if (isFinal) {
+              this.meshyModelGen.removeCallbacks(requestId);
+              this.availableToRequest = true;
+              resolve("Successfully created mesh with prompt: " + prompt);
+            }
           }
-        }
-      );
+        );
 
-      this.meshyModelGen.setFailureCallback(requestId, (error: string) => {
-        interactable.onFailure(error);
-        this.meshyModelGen.removeCallbacks(requestId);
-        this.availableToRequest = true;
-        reject("Failed to create mesh: " + error);
-      });
-
-      this.meshyModelGen.setProgressCallback(
-        requestId,
-        (stage: string, progress: number) => {
-          interactable.setPrompt(`${prompt}\n[${stage}] ${progress}%`);
-        }
-      );
-
-      // Kick off generation
-      this.meshyModelGen
-        .generateModel(prompt, overridePosition, requestId)
-        .catch((error) => {
-          // Error already handled via failure callback
-          print(`MeshyInteractableFactory: Generation error: ${error}`);
+        this.meshyModelGen.setFailureCallback(requestId, (error: string) => {
+          interactable.onFailure(error);
+          this.meshyModelGen.removeCallbacks(requestId);
+          this.availableToRequest = true;
+          reject("Failed to create mesh: " + error);
         });
+
+        this.meshyModelGen.setProgressCallback(
+          requestId,
+          (stage: string, progress: number) => {
+            interactable.setPrompt(`${prompt}\n[${stage}] ${progress}%`);
+          }
+        );
+
+        // Kick off generation
+        this.meshyModelGen
+          .generateModel(prompt, overridePosition, requestId)
+          .catch((error) => {
+            // Error already handled via failure callback
+            print(`MeshyInteractableFactory: Generation error: ${error}`);
+          });
+      } catch (error) {
+        this.availableToRequest = true;
+        reject(error);
+      }
     });
   }
 
@@ -163,58 +168,63 @@ export class MeshyInteractableFactory extends BaseScriptComponent {
 
       this.availableToRequest = false;
 
-      // Create the interactable prefab
-      let outputObj = this.snap3DInteractablePrefab.instantiate(
-        this.sceneObject
-      );
-      outputObj.name = "MeshyInteractable - Image-to-3D";
+      try {
+        // Create the interactable prefab
+        let outputObj = this.snap3DInteractablePrefab.instantiate(
+          this.sceneObject
+        );
+        outputObj.name = "MeshyInteractable - Image-to-3D";
 
-      let interactable = outputObj.getComponent(
-        Snap3DInteractable.getTypeName()
-      );
-      interactable.setPrompt("Generating 3D from image...");
+        let interactable = outputObj.getComponent(
+          Snap3DInteractable.getTypeName()
+        );
+        interactable.setPrompt("Generating 3D from image...");
 
-      // Position it
-      if (overridePosition) {
-        outputObj.getTransform().setWorldPosition(overridePosition);
-      } else {
-        let newPos = this.wcfmp.getForwardPosition(80);
-        outputObj.getTransform().setWorldPosition(newPos);
-      }
+        // Position it
+        if (overridePosition) {
+          outputObj.getTransform().setWorldPosition(overridePosition);
+        } else {
+          let newPos = this.wcfmp.getForwardPosition(80);
+          outputObj.getTransform().setWorldPosition(newPos);
+        }
 
-      const requestId = `meshy_img_${Date.now()}`;
+        const requestId = `meshy_img_${Date.now()}`;
 
-      this.meshyModelGen.setModelCallback(
-        requestId,
-        (model: GltfAsset, isFinal: boolean) => {
-          interactable.setModel(model, isFinal);
-          if (isFinal) {
-            this.meshyModelGen.removeCallbacks(requestId);
-            this.availableToRequest = true;
-            resolve("Successfully created 3D model from image");
+        this.meshyModelGen.setModelCallback(
+          requestId,
+          (model: GltfAsset, isFinal: boolean) => {
+            interactable.setModel(model, isFinal);
+            if (isFinal) {
+              this.meshyModelGen.removeCallbacks(requestId);
+              this.availableToRequest = true;
+              resolve("Successfully created 3D model from image");
+            }
           }
-        }
-      );
+        );
 
-      this.meshyModelGen.setFailureCallback(requestId, (error: string) => {
-        interactable.onFailure(error);
-        this.meshyModelGen.removeCallbacks(requestId);
-        this.availableToRequest = true;
-        reject("Failed to create 3D from image: " + error);
-      });
-
-      this.meshyModelGen.setProgressCallback(
-        requestId,
-        (stage: string, progress: number) => {
-          interactable.setPrompt(`Image-to-3D\n[${stage}] ${progress}%`);
-        }
-      );
-
-      this.meshyModelGen
-        .generateModelFromImage(imageUrl, requestId)
-        .catch((error) => {
-          print(`MeshyInteractableFactory: Image-to-3D error: ${error}`);
+        this.meshyModelGen.setFailureCallback(requestId, (error: string) => {
+          interactable.onFailure(error);
+          this.meshyModelGen.removeCallbacks(requestId);
+          this.availableToRequest = true;
+          reject("Failed to create 3D from image: " + error);
         });
+
+        this.meshyModelGen.setProgressCallback(
+          requestId,
+          (stage: string, progress: number) => {
+            interactable.setPrompt(`Image-to-3D\n[${stage}] ${progress}%`);
+          }
+        );
+
+        this.meshyModelGen
+          .generateModelFromImage(imageUrl, requestId)
+          .catch((error) => {
+            print(`MeshyInteractableFactory: Image-to-3D error: ${error}`);
+          });
+      } catch (error) {
+        this.availableToRequest = true;
+        reject(error);
+      }
     });
   }
 
@@ -240,56 +250,61 @@ export class MeshyInteractableFactory extends BaseScriptComponent {
 
       this.availableToRequest = false;
 
-      let outputObj = this.snap3DInteractablePrefab.instantiate(
-        this.sceneObject
-      );
-      outputObj.name = "MeshyInteractable - Camera-to-3D";
+      try {
+        let outputObj = this.snap3DInteractablePrefab.instantiate(
+          this.sceneObject
+        );
+        outputObj.name = "MeshyInteractable - Camera-to-3D";
 
-      let interactable = outputObj.getComponent(
-        Snap3DInteractable.getTypeName()
-      );
-      interactable.setPrompt("Generating 3D from camera...");
+        let interactable = outputObj.getComponent(
+          Snap3DInteractable.getTypeName()
+        );
+        interactable.setPrompt("Generating 3D from camera...");
 
-      if (overridePosition) {
-        outputObj.getTransform().setWorldPosition(overridePosition);
-      } else {
-        let newPos = this.wcfmp.getForwardPosition(80);
-        outputObj.getTransform().setWorldPosition(newPos);
-      }
+        if (overridePosition) {
+          outputObj.getTransform().setWorldPosition(overridePosition);
+        } else {
+          let newPos = this.wcfmp.getForwardPosition(80);
+          outputObj.getTransform().setWorldPosition(newPos);
+        }
 
-      const requestId = `meshy_cam_${Date.now()}`;
+        const requestId = `meshy_cam_${Date.now()}`;
 
-      this.meshyModelGen.setModelCallback(
-        requestId,
-        (model: GltfAsset, isFinal: boolean) => {
-          interactable.setModel(model, isFinal);
-          if (isFinal) {
-            this.meshyModelGen.removeCallbacks(requestId);
-            this.availableToRequest = true;
-            resolve("Successfully created 3D model from camera");
+        this.meshyModelGen.setModelCallback(
+          requestId,
+          (model: GltfAsset, isFinal: boolean) => {
+            interactable.setModel(model, isFinal);
+            if (isFinal) {
+              this.meshyModelGen.removeCallbacks(requestId);
+              this.availableToRequest = true;
+              resolve("Successfully created 3D model from camera");
+            }
           }
-        }
-      );
+        );
 
-      this.meshyModelGen.setFailureCallback(requestId, (error: string) => {
-        interactable.onFailure(error);
-        this.meshyModelGen.removeCallbacks(requestId);
-        this.availableToRequest = true;
-        reject("Failed to create 3D from camera: " + error);
-      });
-
-      this.meshyModelGen.setProgressCallback(
-        requestId,
-        (stage: string, progress: number) => {
-          interactable.setPrompt(`Camera-to-3D\n[${stage}] ${progress}%`);
-        }
-      );
-
-      this.meshyModelGen
-        .generateModelFromTexture(texture, requestId)
-        .catch((error) => {
-          print(`MeshyInteractableFactory: Camera-to-3D error: ${error}`);
+        this.meshyModelGen.setFailureCallback(requestId, (error: string) => {
+          interactable.onFailure(error);
+          this.meshyModelGen.removeCallbacks(requestId);
+          this.availableToRequest = true;
+          reject("Failed to create 3D from camera: " + error);
         });
+
+        this.meshyModelGen.setProgressCallback(
+          requestId,
+          (stage: string, progress: number) => {
+            interactable.setPrompt(`Camera-to-3D\n[${stage}] ${progress}%`);
+          }
+        );
+
+        this.meshyModelGen
+          .generateModelFromTexture(texture, requestId)
+          .catch((error) => {
+            print(`MeshyInteractableFactory: Camera-to-3D error: ${error}`);
+          });
+      } catch (error) {
+        this.availableToRequest = true;
+        reject(error);
+      }
     });
   }
 

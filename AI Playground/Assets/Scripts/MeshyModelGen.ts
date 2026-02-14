@@ -98,7 +98,6 @@ export class MeshyModelGen extends BaseScriptComponent {
     overridePosition?: vec3,
     requestId?: string
   ): Promise<string> {
-    const wasGenerating = this.isGenerating;
     this.isGenerating = true;
 
     const currentRequestId =
@@ -138,7 +137,6 @@ export class MeshyModelGen extends BaseScriptComponent {
       // Load the GLB model from the result URL
       if (!result.model_urls?.glb) {
         const errorMsg = "MeshyModelGen: No GLB URL in API response";
-        this.notifyFailureCallbacks(currentRequestId, errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -160,7 +158,7 @@ export class MeshyModelGen extends BaseScriptComponent {
         print(`MeshyModelGen: Error: ${error}`);
       }
 
-      this.notifyFailureCallbacks(this.activeRequestId, error.toString());
+      this.notifyFailureCallbacks(currentRequestId, error.toString());
       throw error;
     } finally {
       this.isGenerating = false;
@@ -208,7 +206,6 @@ export class MeshyModelGen extends BaseScriptComponent {
 
       if (!result.model_urls?.glb) {
         const errorMsg = "MeshyModelGen: No GLB URL in API response";
-        this.notifyFailureCallbacks(currentRequestId, errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -230,7 +227,7 @@ export class MeshyModelGen extends BaseScriptComponent {
         print(`MeshyModelGen: Image-to-3D error: ${error}`);
       }
 
-      this.notifyFailureCallbacks(this.activeRequestId, error.toString());
+      this.notifyFailureCallbacks(currentRequestId, error.toString());
       throw error;
     } finally {
       this.isGenerating = false;
@@ -314,7 +311,6 @@ export class MeshyModelGen extends BaseScriptComponent {
           if (this.enableDebugLogging) {
             print(`MeshyModelGen: ${errorMsg}`);
           }
-          this.notifyFailureCallbacks(requestId, errorMsg);
           reject(new Error(errorMsg));
         }
       );
