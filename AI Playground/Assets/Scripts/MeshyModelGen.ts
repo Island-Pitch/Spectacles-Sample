@@ -298,7 +298,6 @@ export class MeshyModelGen extends BaseScriptComponent {
       if (this.enableDebugLogging) {
         print(`MeshyModelGen: Texture-to-3D error: ${error}`);
       }
-      this.notifyFailureCallbacks(currentRequestId, error.toString());
       throw error;
     } finally {
       this.isGenerating = false;
