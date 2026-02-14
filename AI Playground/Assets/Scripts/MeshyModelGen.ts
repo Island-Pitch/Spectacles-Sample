@@ -63,7 +63,6 @@ export class MeshyModelGen extends BaseScriptComponent {
   private isGenerating: boolean = false;
 
   // Callback maps matching ModelGen's interface
-  private imageCallbacks: Map<string, (texture: Texture) => void> = new Map();
   private modelCallbacks: Map<
     string,
     (model: GltfAsset, isFinal: boolean) => void
@@ -75,8 +74,6 @@ export class MeshyModelGen extends BaseScriptComponent {
   > = new Map();
 
   private activeRequestId: string = null;
-  private requestPositions: Map<string, vec3> = new Map();
-  private requestScales: Map<string, number> = new Map();
 
   onAwake() {
     if (!this.apiKey || this.apiKey.trim() === "") {
@@ -105,13 +102,6 @@ export class MeshyModelGen extends BaseScriptComponent {
     const currentRequestId =
       requestId || `meshy_${Date.now()}_${Math.random()}`;
     this.activeRequestId = currentRequestId;
-
-    // Store position and scale for this request
-    const effectivePosition = overridePosition || this.getTargetPosition();
-    if (effectivePosition) {
-      this.requestPositions.set(currentRequestId, effectivePosition);
-    }
-    this.requestScales.set(currentRequestId, this.defaultScale);
 
     try {
       if (!prompt || prompt.trim() === "") {
@@ -172,9 +162,6 @@ export class MeshyModelGen extends BaseScriptComponent {
     } finally {
       this.isGenerating = false;
       this.activeRequestId = null;
-      // Clean up request-specific data
-      this.requestPositions.delete(currentRequestId);
-      this.requestScales.delete(currentRequestId);
     }
   }
 
@@ -343,13 +330,6 @@ export class MeshyModelGen extends BaseScriptComponent {
 
   // --- Callback interface (matches ModelGen for compatibility) ---
 
-  public setImageCallback(
-    callbackId: string,
-    callback: (texture: Texture) => void
-  ): void {
-    this.imageCallbacks.set(callbackId, callback);
-  }
-
   public setModelCallback(
     callbackId: string,
     callback: (model: GltfAsset, isFinal: boolean) => void
@@ -372,7 +352,6 @@ export class MeshyModelGen extends BaseScriptComponent {
   }
 
   public removeCallbacks(callbackId: string): void {
-    this.imageCallbacks.delete(callbackId);
     this.modelCallbacks.delete(callbackId);
     this.failureCallbacks.delete(callbackId);
     this.progressCallbacks.delete(callbackId);

@@ -74,13 +74,19 @@ export class MeshyApi {
     prompt: string,
     options?: Partial<MeshyTextTo3DRequest>
   ): Promise<string> {
+    // Filter out undefined values from options to prevent overriding defaults
+    const filteredOptions = options
+      ? Object.fromEntries(
+          Object.entries(options).filter(([_, value]) => value !== undefined)
+        )
+      : {};
     const body: MeshyTextTo3DRequest = {
       mode: "preview",
       prompt: prompt,
       ai_model: options?.ai_model || "meshy-6",
       topology: options?.topology || "triangle",
       target_polycount: options?.target_polycount || 30000,
-      ...options,
+      ...filteredOptions,
     };
     // Ensure mode and prompt are always set from function parameters
     body.mode = "preview";
@@ -107,11 +113,17 @@ export class MeshyApi {
     previewTaskId: string,
     options?: Partial<MeshyTextTo3DRequest>
   ): Promise<string> {
+    // Filter out undefined values from options to prevent overriding defaults
+    const filteredOptions = options
+      ? Object.fromEntries(
+          Object.entries(options).filter(([_, value]) => value !== undefined)
+        )
+      : {};
     const body: MeshyTextTo3DRequest = {
       mode: "refine",
       preview_task_id: previewTaskId,
       enable_pbr: options?.enable_pbr || false,
-      ...options,
+      ...filteredOptions,
     };
     // Ensure mode and preview_task_id are always set from function parameters
     body.mode = "refine";
@@ -140,6 +152,12 @@ export class MeshyApi {
     imageUrl: string,
     options?: Partial<MeshyImageTo3DRequest>
   ): Promise<string> {
+    // Filter out undefined values from options to prevent overriding defaults
+    const filteredOptions = options
+      ? Object.fromEntries(
+          Object.entries(options).filter(([_, value]) => value !== undefined)
+        )
+      : {};
     const body: MeshyImageTo3DRequest = {
       image_url: imageUrl,
       ai_model: options?.ai_model || "meshy-6",
@@ -147,7 +165,7 @@ export class MeshyApi {
       target_polycount: options?.target_polycount || 30000,
       enable_pbr: options?.enable_pbr || false,
       should_texture: options?.should_texture !== false,
-      ...options,
+      ...filteredOptions,
     };
     // Ensure image_url is always set from function parameter
     body.image_url = imageUrl;
