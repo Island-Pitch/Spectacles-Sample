@@ -3,11 +3,14 @@
 # ============================================================
 #
 # Dev  — Deploys on PR open / push to PR branch targeting main.
-#         Stack: pitch-world-dev  →  separate CloudFront URL
+#         Stack: ip-bot-pitch-world-dev  →  separate CloudFront URL
 #         Posts preview URL as PR comment.
 #
 # Prod — Deploys on merge to main.
-#         Stack: pitch-world-prod →  production CloudFront URL
+#         Stack: ip-bot-pitch-world-prod →  production CloudFront URL
+#
+# Stack names use the ip-bot- prefix to match the existing
+# IAM policy resource scoping on the Island Pitch AWS account.
 #
 # Required GitHub Secrets (set per-environment or repo-wide):
 #   AWS_ACCESS_KEY_ID        — IAM credentials
@@ -68,14 +71,14 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "environment=dev" >> "$GITHUB_OUTPUT"
-            echo "stack_name=pitch-world-dev" >> "$GITHUB_OUTPUT"
+            echo "stack_name=ip-bot-pitch-world-dev" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             ENV="${{ inputs.environment }}"
             echo "environment=$ENV" >> "$GITHUB_OUTPUT"
-            echo "stack_name=pitch-world-${ENV}" >> "$GITHUB_OUTPUT"
+            echo "stack_name=ip-bot-pitch-world-${ENV}" >> "$GITHUB_OUTPUT"
           else
             echo "environment=prod" >> "$GITHUB_OUTPUT"
-            echo "stack_name=pitch-world-prod" >> "$GITHUB_OUTPUT"
+            echo "stack_name=ip-bot-pitch-world-prod" >> "$GITHUB_OUTPUT"
           fi
 
   # ── Build & Deploy ─────────────────────────────────────────
