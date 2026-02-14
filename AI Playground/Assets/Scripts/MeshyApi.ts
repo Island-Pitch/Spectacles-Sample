@@ -82,8 +82,9 @@ export class MeshyApi {
       target_polycount: options?.target_polycount || 30000,
       ...options,
     };
-    // Ensure mode is always preview for this method
+    // Ensure mode and prompt are always set from function parameters
     body.mode = "preview";
+    body.prompt = prompt;
 
     if (this.enableDebugLogging) {
       print(`MeshyApi: Submitting text-to-3D preview: "${prompt}"`);
@@ -112,7 +113,9 @@ export class MeshyApi {
       enable_pbr: options?.enable_pbr || false,
       ...options,
     };
+    // Ensure mode and preview_task_id are always set from function parameters
     body.mode = "refine";
+    body.preview_task_id = previewTaskId;
 
     if (this.enableDebugLogging) {
       print(
@@ -146,6 +149,8 @@ export class MeshyApi {
       should_texture: options?.should_texture !== false,
       ...options,
     };
+    // Ensure image_url is always set from function parameter
+    body.image_url = imageUrl;
 
     if (this.enableDebugLogging) {
       print(`MeshyApi: Submitting image-to-3D`);

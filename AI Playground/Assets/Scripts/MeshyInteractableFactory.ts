@@ -16,34 +16,6 @@ import WorldCameraFinderProvider from "SpectaclesInteractionKit.lspkg/Providers/
  */
 @component
 export class MeshyInteractableFactory extends BaseScriptComponent {
-  @ui.separator
-  @ui.group_start("Meshy.ai Settings")
-  @input
-  @hint("Meshy.ai API key")
-  private apiKey: string = "";
-
-  @input
-  @hint("Enable mesh refinement (slower but higher quality)")
-  private refineMesh: boolean = false;
-
-  @input
-  @hint("Generate PBR textures (metallic, roughness, normal)")
-  private enablePbr: boolean = false;
-
-  @input
-  @widget(
-    new ComboBoxWidget([
-      new ComboBoxItem("Triangle", "triangle"),
-      new ComboBoxItem("Quad", "quad"),
-    ])
-  )
-  private topology: string = "triangle";
-
-  @input
-  @hint("Target polygon count")
-  @widget(new SliderWidget(1000, 100000, 1000))
-  private targetPolycount: number = 30000;
-  @ui.group_end
 
   @ui.separator
   @ui.group_start("Text-to-3D Test")

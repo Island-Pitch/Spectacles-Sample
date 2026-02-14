@@ -98,14 +98,6 @@ export class MeshyModelGen extends BaseScriptComponent {
     overridePosition?: vec3,
     requestId?: string
   ): Promise<string> {
-    if (!prompt || prompt.trim() === "") {
-      throw new Error("MeshyModelGen: Invalid prompt provided");
-    }
-
-    if (!this.meshyApi) {
-      throw new Error("MeshyModelGen: API not initialized - check API key");
-    }
-
     const wasGenerating = this.isGenerating;
     this.isGenerating = true;
 
@@ -113,13 +105,20 @@ export class MeshyModelGen extends BaseScriptComponent {
       requestId || `meshy_${Date.now()}_${Math.random()}`;
     this.activeRequestId = currentRequestId;
 
-    if (this.enableDebugLogging) {
-      print(
-        `MeshyModelGen: Generating text-to-3D: "${prompt}" (requestId: ${currentRequestId})`
-      );
-    }
-
     try {
+      if (!prompt || prompt.trim() === "") {
+        throw new Error("MeshyModelGen: Invalid prompt provided");
+      }
+
+      if (!this.meshyApi) {
+        throw new Error("MeshyModelGen: API not initialized - check API key");
+      }
+
+      if (this.enableDebugLogging) {
+        print(
+          `MeshyModelGen: Generating text-to-3D: "${prompt}" (requestId: ${currentRequestId})`
+        );
+      }
       const result = await this.meshyApi.textTo3DFull(prompt, {
         refine: this.refineMesh,
         enablePbr: this.enablePbr,
@@ -137,13 +136,17 @@ export class MeshyModelGen extends BaseScriptComponent {
       });
 
       // Load the GLB model from the result URL
-      if (result.model_urls?.glb) {
-        await this.loadGlbFromUrl(
-          result.model_urls.glb,
-          currentRequestId,
-          !this.refineMesh || result.texture_urls?.length > 0
-        );
+      if (!result.model_urls?.glb) {
+        const errorMsg = "MeshyModelGen: No GLB URL in API response";
+        this.notifyFailureCallbacks(currentRequestId, errorMsg);
+        throw new Error(errorMsg);
       }
+
+      await this.loadGlbFromUrl(
+        result.model_urls.glb,
+        currentRequestId,
+        true
+      );
 
       const resultMsg = `Successfully created ${this.refineMesh ? "refined " : ""}mesh with prompt: ${prompt}`;
 
@@ -173,24 +176,23 @@ export class MeshyModelGen extends BaseScriptComponent {
     imageUrl: string,
     requestId?: string
   ): Promise<string> {
-    if (!imageUrl || imageUrl.trim() === "") {
-      throw new Error("MeshyModelGen: Invalid image URL provided");
-    }
-
-    if (!this.meshyApi) {
-      throw new Error("MeshyModelGen: API not initialized - check API key");
-    }
-
     this.isGenerating = true;
     const currentRequestId =
       requestId || `meshy_img_${Date.now()}_${Math.random()}`;
     this.activeRequestId = currentRequestId;
 
-    if (this.enableDebugLogging) {
-      print(`MeshyModelGen: Generating image-to-3D from: ${imageUrl}`);
-    }
-
     try {
+      if (!imageUrl || imageUrl.trim() === "") {
+        throw new Error("MeshyModelGen: Invalid image URL provided");
+      }
+
+      if (!this.meshyApi) {
+        throw new Error("MeshyModelGen: API not initialized - check API key");
+      }
+
+      if (this.enableDebugLogging) {
+        print(`MeshyModelGen: Generating image-to-3D from: ${imageUrl}`);
+      }
       const result = await this.meshyApi.imageTo3DFull(imageUrl, {
         enablePbr: this.enablePbr,
         topology: this.topology as "quad" | "triangle",
@@ -204,13 +206,17 @@ export class MeshyModelGen extends BaseScriptComponent {
         },
       });
 
-      if (result.model_urls?.glb) {
-        await this.loadGlbFromUrl(
-          result.model_urls.glb,
-          currentRequestId,
-          true
-        );
+      if (!result.model_urls?.glb) {
+        const errorMsg = "MeshyModelGen: No GLB URL in API response";
+        this.notifyFailureCallbacks(currentRequestId, errorMsg);
+        throw new Error(errorMsg);
       }
+
+      await this.loadGlbFromUrl(
+        result.model_urls.glb,
+        currentRequestId,
+        true
+      );
 
       const resultMsg = "Successfully created 3D model from image";
 

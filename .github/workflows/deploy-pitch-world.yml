@@ -192,10 +192,10 @@ jobs:
           # HTML, SW, manifest — must-revalidate
           aws s3 sync out/ s3://${{ steps.stack.outputs.bucket }}/ \
             --cache-control "public, max-age=0, must-revalidate" \
+            --exclude "*" \
             --include "*.html" \
             --include "sw.js" \
-            --include "assets/images/favicon/site.webmanifest" \
-            --exclude "*"
+            --include "assets/images/favicon/site.webmanifest"
 
       # ── Invalidate CloudFront ──────────────────────────────
       - name: Invalidate CloudFront cache
