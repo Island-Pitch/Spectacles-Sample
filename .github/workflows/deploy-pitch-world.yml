@@ -1,0 +1,159 @@
+# ============================================================
+# Pitch World PWA — Deploy to AWS
+# ============================================================
+# Triggers on push to main (after PR merge).
+# Builds Next.js static export + Lambda functions, deploys via
+# SAM, syncs static files to S3, and invalidates CloudFront.
+#
+# Required GitHub Secrets:
+#   AWS_ACCESS_KEY_ID        — IAM user with CloudFormation/S3/CloudFront/Lambda/API GW permissions
+#   AWS_SECRET_ACCESS_KEY    — Corresponding secret key
+#   MESHY_API_KEY            — Meshy.ai API key
+#   GEMINI_API_KEY           — Google Gemini API key
+#   OPENAI_API_KEY           — OpenAI API key
+#
+# Optional GitHub Secrets (for custom domain):
+#   DOMAIN_NAME              — e.g. pitchworld.islandpitch.world
+#   CERTIFICATE_ARN          — ACM certificate ARN (us-east-1 for CloudFront)
+# ============================================================
+
+name: Deploy Pitch World
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pitch-world-pwa/**"
+      - ".github/workflows/deploy-pitch-world.yml"
+  workflow_dispatch: # manual trigger
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-west-2
+  SAM_STACK_NAME: pitch-world
+  PWA_DIR: pitch-world-pwa
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pitch-world-pwa
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node.js ───────────────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: pitch-world-pwa/package-lock.json
+
+      # ── AWS Credentials ──────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── SAM CLI ──────────────────────────────────────────
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      # ── Install Dependencies ─────────────────────────────
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Lambda dependencies
+        run: cd src/lambda && npm ci
+
+      # ── Build ────────────────────────────────────────────
+      - name: Build Next.js static export
+        run: npm run build
+
+      - name: Build Lambda functions
+        run: npm run build:lambda
+
+      - name: SAM build
+        run: sam build
+
+      # ── Deploy SAM Stack ─────────────────────────────────
+      - name: SAM deploy
+        run: |
+          sam deploy \
+            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --capabilities CAPABILITY_IAM \
+            --resolve-s3 \
+            --parameter-overrides \
+              MeshyApiKey=${{ secrets.MESHY_API_KEY }} \
+              GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
+              OpenAIApiKey=${{ secrets.OPENAI_API_KEY }} \
+              DomainName=${{ secrets.DOMAIN_NAME || '' }} \
+              CertificateArn=${{ secrets.CERTIFICATE_ARN || '' }}
+
+      # ── Get Stack Outputs ────────────────────────────────
+      - name: Get stack outputs
+        id: stack
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" \
+            --output text)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text)
+          CF_URL=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.SAM_STACK_NAME }} \
+            --query "Stacks[0].Outputs[?OutputKey=='CloudFrontURL'].OutputValue" \
+            --output text)
+          echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
+          echo "dist_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+          echo "cf_url=$CF_URL" >> "$GITHUB_OUTPUT"
+
+      # ── Sync Static Files to S3 ─────────────────────────
+      - name: Sync static files to S3
+        run: |
+          aws s3 sync out/ s3://${{ steps.stack.outputs.bucket }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --exclude "sw.js" \
+            --exclude "assets/images/favicon/site.webmanifest"
+
+          # HTML, SW, and manifest get short cache (for updates)
+          aws s3 sync out/ s3://${{ steps.stack.outputs.bucket }}/ \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --include "*.html" \
+            --include "sw.js" \
+            --include "assets/images/favicon/site.webmanifest" \
+            --exclude "*" \
+
+      # ── Invalidate CloudFront ────────────────────────────
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.stack.outputs.dist_id }} \
+            --paths "/*"
+
+      # ── Print Live URL ───────────────────────────────────
+      - name: Print live URL
+        run: |
+          echo "============================================"
+          echo "  Pitch World is live!"
+          echo "  ${{ steps.stack.outputs.cf_url }}"
+          echo "============================================"
